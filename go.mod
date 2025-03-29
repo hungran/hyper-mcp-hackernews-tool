@@ -1,8 +1,6 @@
-module github.com/hyper-mcp/plugins/hackernews
+module github.com/hungran/hyper-mcp-hackernews-tool
 
-go 1.21.0
-
-toolchain go1.21.4
+go 1.24.1
 
 require (
 	github.com/extism/go-pdk v1.1.3
