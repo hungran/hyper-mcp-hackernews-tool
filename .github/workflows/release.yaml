@@ -1,7 +1,8 @@
 name: Build and Publish Docker Image
 
 on:
-  workflow_dispatch:
+  release:
+    types: [published]
   push:
     branches:
       - main
