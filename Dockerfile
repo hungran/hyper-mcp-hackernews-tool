@@ -5,8 +5,9 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-
-RUN tinygo build -o plugin.wasm -target=wasi -no-debug .
+ARG BUILDVCS=false
+ENV GOFLAGS="-buildvcs=${BUILDVCS}"
+RUN tinygo build -target wasi -o plugin.wasm .
 
 FROM scratch
 WORKDIR /
