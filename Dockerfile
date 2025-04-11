@@ -12,5 +12,5 @@ RUN GOOS=wasip1 GOARCH=wasm tinygo build -o /app/plugin.wasm -target=wasi .
 
 FROM scratch
 WORKDIR /
-# COPY --from=builder /app/plugin.wasm /plugin.wasm
-COPY plugin.wasm /plugin.wasm
+COPY --from=builder /app/plugin.wasm /plugin.wasm
+# COPY plugin.wasm /plugin.wasm
