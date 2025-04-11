@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	pdk "github.com/extism/go-pdk"
 	"github.com/tidwall/gjson"
@@ -18,7 +17,21 @@ type HNStory struct {
 }
 
 func Call(input CallToolRequest) (CallToolResult, error) {
-	return fetchHackerNews()
+	numStories := 10 // default value
+	if args, ok := input.Params.Arguments.(map[string]interface{}); ok {
+		if n, exists := args["num_stories"]; exists {
+			if val, ok := n.(float64); ok {
+				numStories = int(val)
+				if numStories > 100 {
+					numStories = 100
+				}
+				if numStories < 1 {
+					numStories = 10
+				}
+			}
+		}
+	}
+	return fetchHackerNews(numStories)
 }
 
 func Describe() (ListToolsResult, error) {
@@ -26,23 +39,26 @@ func Describe() (ListToolsResult, error) {
 		Tools: []ToolDescription{
 			{
 				Name:        "hackernews",
-				Description: "Get top 5 stories from Hacker News",
+				Description: "Get top stories from Hacker News (max 100)",
 				InputSchema: map[string]interface{}{
 					"type": "object",
 					"properties": map[string]interface{}{
-						"random_string": map[string]interface{}{
-							"description": "Dummy parameter for no-parameter tools",
-							"type":        "string",
+						"num_stories": map[string]interface{}{
+							"description": "Number of top stories to fetch (max 100, defaults to 10)",
+							"type":        "integer",
+							"minimum":     1,
+							"maximum":     100,
+							"default":     10,
 						},
 					},
-					"required": []string{"random_string"},
+					"required": []string{"num_stories"},
 				},
 			},
 		},
 	}, nil
 }
 
-func fetchHackerNews() (CallToolResult, error) {
+func fetchHackerNews(numStories int) (CallToolResult, error) {
 	// Fetch top stories
 	req := pdk.NewHTTPRequest(pdk.MethodGet, "https://hacker-news.firebaseio.com/v0/topstories.json")
 	resp := req.Send()
@@ -56,9 +72,9 @@ func fetchHackerNews() (CallToolResult, error) {
 		return CallToolResult{}, fmt.Errorf("failed to parse story IDs: %v", err)
 	}
 
-	// Get top 5 stories
+	// Get requested number of stories
 	var stories []HNStory
-	for i := 0; i < 5 && i < len(storyIDs); i++ {
+	for i := 0; i < numStories && i < len(storyIDs); i++ {
 		story, err := fetchStory(storyIDs[i])
 		if err != nil {
 			return CallToolResult{}, fmt.Errorf("failed to fetch story %d: %v", storyIDs[i], err)
@@ -66,19 +82,13 @@ func fetchHackerNews() (CallToolResult, error) {
 		stories = append(stories, story)
 	}
 
-	// Format output
-	var output strings.Builder
-	output.WriteString("# Top 5 Hacker News Stories\n\n")
-	for i, story := range stories {
-		output.WriteString(fmt.Sprintf("## %d. %s\n", i+1, story.Title))
-		output.WriteString(fmt.Sprintf("Score: %d | Author: %s\n", story.Score, story.By))
-		if story.URL != "" {
-			output.WriteString(fmt.Sprintf("URL: %s\n", story.URL))
-		}
-		output.WriteString("\n")
+	// Convert stories to JSON string
+	jsonBytes, err := json.Marshal(stories)
+	if err != nil {
+		return CallToolResult{}, fmt.Errorf("failed to marshal stories: %v", err)
 	}
+	text := string(jsonBytes)
 
-	text := output.String()
 	return CallToolResult{
 		Content: []Content{
 			{
