@@ -1,6 +1,6 @@
 # Hacker News Plugin
 
-A [hyper-mcp](https://github.com/tuananh/hyper-mcp) plugin that fetches the top 5 stories from Hacker News.
+A [hyper-mcp](https://github.com/tuananh/hyper-mcp) plugin that fetches the top stories from Hacker News (max 100 stories).
 <p align="center">
   <img src="./assets/hackernews.png" style="height: 300px;">
 </p>
